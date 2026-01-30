@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>墨刀AI - 产设研综合智能体</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 噪点纹理 - 增加质感 */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        :root {
+            --primary-color: #4F46E5;
+            --primary-light: #EEF2FF;
+            --sidebar-bg: #FAFBFC;
+            --text-main: #1F2937; /* 更柔和的黑色 */
+            --text-sub: #6B7280;
+        }
+        body {
+            font-family: 'Inter', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #FFFFFF;
+            font-size: 14px;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+            letter-spacing: -0.01em; /* 稍微紧凑的字间距，更现代 */
+        }
+        
+        /* 极光背景动画 */
+        .aurora-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.08), transparent 25%);
+            animation: aurora-move 20s infinite alternate;
+        }
+        @keyframes aurora-move {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* 布局框架 */
+        .app-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; }
+        .sidebar { 
+            width: 260px; 
+            background-color: var(--sidebar-bg); 
+            border-right: 1px solid rgba(243, 244, 246, 0.6); 
+            backdrop-filter: blur(20px);
+            display: flex; 
+            flex-direction: column; 
+            z-index: 20;
+        }
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .top-navbar { 
+            height: 64px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-end; 
+            padding: 0 32px; 
+            gap: 20px; 
+            z-index: 30;
+        }
+        .content-scroll { 
+            flex: 1; 
+            overflow-y: auto; 
+            scroll-behavior: smooth; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 40px 20px 100px 20px; 
+        }
+
+        /* L1 Tabs 硅谷质感 */
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 96px;
+            height: 96px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.5);
+            flex-shrink: 0;
+        }
+        .tab-item:hover { 
+            background: #FFFFFF; 
+            border-color: rgba(243, 244, 246, 0.8); 
+            transform: translateY(-4px); 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.04);
+        }
+        .tab-item-active, .tab-item-active:hover { 
+            background: #FFFFFF; 
+            border-color: rgba(79, 70, 229, 0.2); 
+            box-shadow: 0 16px 32px rgba(79, 70, 229, 0.12); 
+            transform: translateY(-4px);
+        }
+        .tab-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 6px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .tab-item-active .tab-icon-box { background: var(--primary-color) !important; color: white !important; }
+        .tab-item span { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+
+        /* 超级输入框 (Fluid) */
+        .ai-input-wrapper {
+            border: 1px solid rgba(0, 0, 0, 0.06); /* 稍微加深边框，确保轮廓清晰 */
+            box-shadow: 
+                0 20px 40px -12px rgba(79, 70, 229, 0.08), 
+                0 2px 8px -2px rgba(0, 0, 0, 0.02),
+                0 0 0 1px rgba(255, 255, 255, 0.8) inset; /* 内部高光保留玻璃感 */
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.9); /* 提高不透明度，增强实体感 */
+            backdrop-filter: blur(24px);
+            padding: 24px 24px 32px 24px;
+            width: 100%;
+            max-width: 800px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 30;
+        }
+        .ai-input-wrapper:focus-within {
+            border-color: rgba(79, 70, 229, 0.3);
+            box-shadow: 0 30px 60px -12px rgba(79, 70, 229, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+        }
+        .input-tag-inline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+            color: var(--primary-color);
+            padding: 0 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            height: 28px;
+            line-height: 28px;
+            font-weight: 600;
+            width: fit-content;
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(79, 70, 229, 0.05);
+            transform: translateY(1px);
+        }
+        .ai-textarea {
+            flex: 1;
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text-main);
+            background: transparent;
+            transition: text-indent 0.2s, height 0.2s;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        /* 呼吸光标动画 */
+        .cursor-blink {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background-color: var(--primary-color);
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 二级卡片收起/展开 - 丝滑动效 */
+        .collapse-container {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            max-width: 1000px;
+            transform-origin: top center;
+        }
+        .collapse-container.collapsed {
+            grid-template-rows: 0fr;
+            opacity: 0;
+            transform: scale(0.95) translateY(-20px);
+        }
+        .collapse-content {
+            overflow: hidden;
+            min-height: 0;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .collapsed .collapse-content {
+            opacity: 0;
+        }
+
+        /* 标签淡入淡出动画 */
+        .fade-enter-active {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .fade-leave-active {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fade-enter-from {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.9);
+        }
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.95);
+        }
+
+        /* L2 卡片美化 */
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(243, 244, 246, 0.8);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 90px;
+            backdrop-filter: blur(10px);
+        }
+        .scenario-card:hover { 
+            border-color: rgba(79, 70, 229, 0.3);
+            background: linear-gradient(145deg, #FFFFFF 0%, #EEF2FF 100%);
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.08);
+            z-index: 10;
+            position: relative;
+        }
+        .scenario-card:active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease;
+        }
+        .card-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+        
+                /* 侧边栏新样式 */
+        .sidebar-new {
+            background-color: #FAFBFC;
+            border-right: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .new-chat-btn {
+            background: #EEF2FF;
+            color: #4F46E5;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .new-chat-btn:hover {
+            background: #E0E7FF;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+        }
+        .history-title {
+            color: #9CA3AF;
+            font-size: 12px;
+            margin-bottom: 8px;
+            padding: 0 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item {
+            padding: 10px 12px;
+            color: #374151;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+            line-height: 1.5;
+        }
+        .history-item:hover {
+            background-color: #EDEFF2;
+            color: #111827;
+        }
+
+        /* 灵感案例新样式 - 调整大小 */
+        .case-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #f3f4f6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .case-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08);
+            border-color: #e5e7eb;
+        }
+        .case-preview-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/10;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .case-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.4s ease;
+            background: white;
+        }
+        .case-card:hover .case-img {
+            transform: scale(1.02);
+            filter: blur(2px);
+        }
+        .case-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .case-card:hover .case-overlay {
+            opacity: 1;
+        }
+        .case-btn {
+            width: 140px;
+            height: 40px;
+            border-radius: 20px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .case-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+            padding: 10px 16px;
+            margin: 4px 8px;
+            border-radius: 12px;
+            color: var(--text-sub);
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        .history-list-item:hover { background: rgba(255,255,255,0.8); color: var(--primary-color); transform: translateX(4px); }
+
+        /* 发送按钮 Loading 态 */
+        .btn-loading {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: btn-shine 1.5s infinite;
+        }
+        @keyframes btn-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* 快捷键提示 */
+        .kbd-shortcut {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 10px;
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+            border-radius: 4px;
+            padding: 2px 6px;
+            color: #9CA3AF;
+        }
+
+        /* 响应式适配规则 - PC/Tablet 优化 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+                z-index: 50;
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .content-scroll {
+                padding: 24px 24px 100px 24px;
+            }
+            
+            .tab-item {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .ai-input-wrapper {
+                padding: 16px;
+                min-height: 150px;
+            }
+        }
+
+        /* L1 Tabs 自适应容器 (PC & Mobile 通用) */
+        .tab-scroll-wrapper {
+            position: relative;
+            width: 100%;
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+            display: flex;
+            justify-content: center;
+        }
+
+        .tab-scroll-container {
+            display: flex;
+            gap: 16px;
+            padding: 20px 5% 40px 5%;
+            width: fit-content;
+            max-width: 100%;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .tab-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+    <div id="app" class="app-container">
+        <!-- 极光背景 -->
+        <div class="aurora-bg"></div>
+        
+        <!-- Mobile Sidebar Overlay -->
+        <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden transition-opacity"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar sidebar-new" :class="{ 'mobile-open': isSidebarOpen }">
+            <div class="p-6 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                        <i class="fa-solid fa-sparkles text-sm"></i>
+                    </div>
+                    <span class="font-bold text-lg text-gray-900">墨刀AI</span>
+                </div>
+                <i @click="isSidebarOpen = false" class="fa-solid fa-xmark text-gray-400 hover:text-gray-600 cursor-pointer lg:hidden text-lg"></i>
+                <i class="fa-solid fa-table-columns text-gray-400 hover:text-gray-600 cursor-pointer hidden lg:block"></i>
+            </div>
+            
+            <div class="px-6 mb-8">
+                <button class="w-full new-chat-btn">
+                    <i class="fa-solid fa-plus text-xs"></i> 新建项目
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col px-4">
+                <div class="history-title">
+                    历史对话
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 hover:text-gray-600 cursor-pointer"></i>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar pt-2">
+                    <div v-for="h in history" :key="h" class="history-item">
+                        {{ h }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 mx-4 mb-4 bg-white rounded-xl border border-gray-100 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">ww</div>
+                    <span class="text-sm font-bold text-gray-700">ww</span>
+                </div>
+                <div class="flex gap-3 text-gray-400">
+                    <i class="fa-regular fa-file-lines hover:text-gray-600 cursor-pointer"></i>
+                    <i class="fa-solid fa-headphones hover:text-gray-600 cursor-pointer"></i>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Container -->
+        <div class="main-container">
+            <header class="top-navbar justify-between lg:justify-end">
+                <button @click="isSidebarOpen = true" class="w-8 h-8 flex items-center justify-center text-gray-500 lg:hidden hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <button class="px-5 py-2 bg-indigo-50/80 backdrop-blur-md text-indigo-600 rounded-full text-[12px] font-bold hover:bg-indigo-100 transition-colors border border-indigo-100/50">
+                        <i class="fa-solid fa-magic mr-2"></i> HTML 转原型
+                    </button>
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md rounded-full border border-gray-100/50">
+                        <span class="text-[12px] font-bold text-gray-500">Tokens</span>
+                        <span class="text-[12px] font-black text-indigo-600 font-mono">9,999k</span>
+                    </div>
+                    <button class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-bell"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-scroll">
+                <!-- Header -->
+                <div class="text-center mb-10 transform transition-all duration-700 ease-out" :class="mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'">
+                    <h1 class="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">{{ greeting }}，墨刀 AI 随时待命</h1>
+                    <p class="text-gray-500 text-[15px] font-medium leading-relaxed max-w-lg mx-auto tracking-normal">让想法在秒级具象化，产设研全流程提效中枢</p>
+                </div>
+
+                <!-- Input Wrapper -->
+                <div class="ai-input-wrapper mb-8 transform transition-all duration-700 delay-100 ease-out" :class="mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'">
+                    <div class="flex-1 flex flex-col relative">
+                        <transition name="fade">
+                            <div v-if="selectedSubCategory" ref="tagRef" class="input-tag-inline shadow-sm backdrop-blur-sm">
+                                <i :class="activeCategoryData.icon" class="opacity-70"></i>
+                                <span>{{ selectedSubCategory }}</span>
+                                <i @click.stop="selectedSubCategory = null" class="fa-solid fa-circle-xmark ml-2 cursor-pointer hover:text-red-500 transition-colors"></i>
+                            </div>
+                        </transition>
+                        
+                        <!-- Removed Cmd+K shortcut hint -->
+
+
+                        <textarea class="ai-textarea custom-scrollbar" 
+                                  ref="textareaRef"
+                                  v-model="inputText"
+                                  @input="autoResize"
+                                  :style="{ textIndent: inputIndent }"
+                                  placeholder="描述您的创意，或者选择下方专业场景开始..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-4 pt-2">
+                        <!-- 深度思考切换 (Dropdown) -->
+                        <div class="relative" ref="thinkModeDropdownRef">
+                            <button @click="showThinkModeDropdown = !showThinkModeDropdown" 
+                                    class="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 hover:bg-gray-50 text-gray-600 border border-transparent hover:border-gray-200">
+                                <i :class="thinkMode === 'deep' ? 'fa-solid fa-brain text-indigo-600' : 'fa-solid fa-bolt text-amber-500'"></i>
+                                <span>{{ thinkMode === 'deep' ? '深度思考' : '极速模式' }}</span>
+                                <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200" 
+                                   :class="{ 'rotate-180': showThinkModeDropdown }"></i>
+                            </button>
+                            
+                            <transition name="fade">
+                                <div v-if="showThinkModeDropdown" 
+                                     class="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 p-1">
+                                    <div @click="thinkMode = 'fast'; showThinkModeDropdown = false"
+                                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                         :class="{ 'bg-indigo-50/50': thinkMode === 'fast' }">
+                                        <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                                            <i class="fa-solid fa-bolt text-xs"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-[13px] font-bold text-gray-800">极速模式</div>
+                                            <div class="text-[10px] text-gray-400 truncate">极速生成，秒级反馈</div>
+                                        </div>
+                                        <i v-if="thinkMode === 'fast'" class="fa-solid fa-check text-indigo-600 text-xs"></i>
+                                    </div>
+                                    
+                                    <div @click="thinkMode = 'deep'; showThinkModeDropdown = false"
+                                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                         :class="{ 'bg-indigo-50/50': thinkMode === 'deep' }">
+                                        <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                                            <i class="fa-solid fa-brain text-xs"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-[13px] font-bold text-gray-800">深度思考</div>
+                                            <div class="text-[10px] text-gray-400 truncate">强化推理，逻辑更强</div>
+                                        </div>
+                                        <i v-if="thinkMode === 'deep'" class="fa-solid fa-check text-indigo-600 text-xs"></i>
+                                    </div>
+                                </div>
+                            </transition>
+                        </div>
+
+                        <div class="flex items-center gap-5">
+                            <div class="relative group cursor-pointer">
+                                <i class="fa-solid fa-paperclip text-gray-400 group-hover:text-indigo-600 text-xl transition-colors"></i>
+                                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">上传文档/图片</span>
+                            </div>
+                            <button :disabled="!inputText.trim() || isSending" 
+                                    @click="handleSend"
+                                    :class="[
+                                        inputText.trim() ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-500/20' : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none',
+                                        isSending ? 'btn-loading cursor-wait' : ''
+                                    ]"
+                                    class="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 active:scale-95">
+                                <i v-if="!isSending" class="fa-solid fa-paper-plane text-sm"></i>
+                                <i v-else class="fa-solid fa-circle-notch fa-spin text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- L1 Tabs -->
+                <div class="flex gap-2 mb-6 transform transition-all duration-500 ease-out relative z-0" 
+                     :class="[
+                        mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
+                        selectedSubCategory ? 'opacity-70' : ''
+                     ]">
+                    <div v-for="cat in categories" 
+                         :key="cat.id" 
+                         @click="activeCategory = cat.id; selectedSubCategory = null"
+                         :class="activeCategory === cat.id ? 'tab-item-active' : ''"
+                         class="tab-item group">
+                        <div class="tab-icon-box" :class="cat.bg" :style="{ color: cat.color }">
+                            <i :class="[cat.icon, activeCategory === cat.id ? '' : 'group-hover:scale-105']" class="transition-transform"></i>
+                        </div>
+                        <span class="text-[14px] font-bold tracking-tight" :class="activeCategory === cat.id ? 'text-indigo-600' : 'text-gray-500'">{{ cat.name }}</span>
+                    </div>
+                </div>
+
+                <!-- L2 Content -->
+                <div class="collapse-container relative z-10" 
+                     :class="[
+                        selectedSubCategory ? 'collapsed' : '',
+                        mounted ? '' : 'opacity-0 translate-y-4'
+                     ]"
+                     :style="{ transitionDelay: selectedSubCategory ? '0ms' : '150ms' }">
+                    <div class="collapse-content">
+                        <div class="grid gap-6 w-full max-w-5xl mb-16 px-4 pt-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                            <div v-for="sub in currentSubCategories" 
+                                 :key="sub.title" 
+                                 @click="handleCardClick(sub)"
+                                 class="scenario-card group min-w-0">
+                                <div class="card-icon-box bg-gray-50 transition-all duration-300 group-hover:scale-105" :class="activeCategoryData.bg">
+                                    <i :class="sub.icon || activeCategoryData.icon" :style="{ color: activeCategoryData.color }"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-[14px] font-black text-gray-800 mb-1 group-hover:text-indigo-600 transition-colors">{{ sub.title }}</h4>
+                                    <p class="text-[11px] text-gray-400 font-medium leading-tight line-clamp-2">{{ sub.desc }}</p>
+                                </div>
+                                <!-- 新tab打开箭头 -->
+                                <i v-if="sub.action === 'openNewTab'" 
+                                   class="fa-solid fa-arrow-up-right-from-square text-xs text-gray-300 opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all"></i>
+                                <!-- 普通箭头 -->
+                                <i v-else 
+                                   class="fa-solid fa-chevron-right text-xs text-gray-300 opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all"></i>
+                            </div>
+                        </div>
+                        <!-- 隐藏的文件上传input -->
+                        <input type="file" ref="fileInputRef" @change="handleFileSelected" accept="image/*" class="hidden" multiple>
+                    </div>
+                </div>
+
+                <!-- Related Cases -->
+                <div class="w-full max-w-6xl px-4 transform transition-all duration-700 delay-400 ease-out" :class="mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-base font-black text-gray-900 tracking-tighter flex items-center gap-2">
+                            <span class="w-1 h-4 bg-indigo-600 rounded-full"></span>
+                            精选灵感案例
+                        </h2>
+                    </div>
+                    <div class="grid gap-6" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                        <div v-for="c in cases" :key="c.title" class="case-card group cursor-pointer">
+                            <h4 class="text-[14px] font-medium text-gray-600 tracking-tight">{{ c.title }}</h4>
+                            
+                            <div class="case-preview-box" :class="c.bgClass">
+                                <!-- 图片作为内容主体，四周留白 -->
+                                <img :src="c.img" class="case-img" alt="preview">
+                                
+                                <!-- Hover Overlay -->
+                                <div class="case-overlay">
+                                    <button class="case-btn">
+                                        <i class="fa-regular fa-copy"></i> 复用案例
+                                    </button>
+                                    <button class="case-btn">
+                                        <i class="fa-solid fa-play"></i> 查看回放
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, watch, nextTick, onMounted } = Vue;
+        createApp({
+            setup() {
+                const inputText = ref('');
+                const isSidebarOpen = ref(false);
+                const activeCategory = ref('recommend');
+                const selectedSubCategory = ref(null);
+                const thinkMode = ref('fast'); // 'fast' or 'deep'
+                const showThinkModeDropdown = ref(false);
+                const isSending = ref(false);
+                const tagRef = ref(null);
+                const textareaRef = ref(null);
+                const fileInputRef = ref(null);
+                const thinkModeDropdownRef = ref(null);
+                const inputIndent = ref('0px');
+                const mounted = ref(false);
+
+                // Greeting logic
+                const greeting = computed(() => {
+                    const hour = new Date().getHours();
+                    if (hour < 6) return '夜深了';
+                    if (hour < 11) return '早上好';
+                    if (hour < 14) return '中午好';
+                    if (hour < 19) return '下午好';
+                    return '晚上好';
+                });
+
+                // Auto resize logic
+                const autoResize = () => {
+                    if (textareaRef.value) {
+                        textareaRef.value.style.height = 'auto';
+                        textareaRef.value.style.height = textareaRef.value.scrollHeight + 'px';
+                    }
+                };
+
+                watch(selectedSubCategory, async (newVal) => {
+                    if (newVal) {
+                        await nextTick();
+                        if (tagRef.value) {
+                            inputIndent.value = (tagRef.value.offsetWidth + 6) + 'px';
+                        }
+                    } else {
+                        inputIndent.value = '0px';
+                    }
+                });
+
+                watch(inputText, () => {
+                   nextTick(autoResize);
+                });
+
+                const history = [
+                    '俄罗斯方块游戏',
+                    '请提供用户查询内容。',
+                    'SaaS产品落地页设计',
+                    '深色主题数据分析仪表板',
+                    '深色主题数据仪表板',
+                    '产品路线图规划',
+                    'AI音乐学习App',
+                    '深色数据仪表板设计',
+                    'SaaS产品落地页设计',
+                    '深色主题数据分析仪表板'
+                ];
+                const categories = [
+                    { id: 'recommend', name: '推荐', icon: 'fa-solid fa-wand-magic-sparkles', color: '#8B5CF6', bg: 'bg-purple-50' },
+                    { id: 'prototype', name: '原型设计', icon: 'fa-solid fa-bolt', color: '#EC4899', bg: 'bg-pink-50' },
+                    { id: 'planning', name: '产品策划', icon: 'fa-solid fa-clipboard-list', color: '#3B82F6', bg: 'bg-blue-50' },
+                    { id: 'ppt', name: 'PPT', icon: 'fa-solid fa-file-powerpoint', color: '#F59E0B', bg: 'bg-amber-50' },
+                    { id: 'ui', name: 'UI设计', icon: 'fa-solid fa-palette', color: '#A855F7', bg: 'bg-violet-50' },
+                    { id: 'marketing', name: '营销推广', icon: 'fa-solid fa-bullhorn', color: '#EF4444', bg: 'bg-red-50' },
+                    { id: 'dev_test', name: '研发测试', icon: 'fa-solid fa-code', color: '#10B981', bg: 'bg-emerald-50' },
+                    { id: 'charts', name: '图表', icon: 'fa-solid fa-diagram-project', color: '#06B6D4', bg: 'bg-cyan-50' }
+                ];
+                const subCategoriesMap = {
+                    recommend: [
+                        { title: 'AI生成原型', desc: '智能生成全套交互原型，支持高保真还原', icon: 'fa-solid fa-wand-magic-sparkles' },
+                        { title: '图片转原型', desc: '上传设计图自动识别并生成可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage' },
+                        { title: '需求文档PRD', desc: '一键生成结构化PRD，涵盖核心逻辑', icon: 'fa-solid fa-file-word' },
+                        { title: 'AI生成界面设计', desc: '快速生成高保真UI界面设计稿', icon: 'fa-solid fa-layer-group' },
+                        { title: 'AI生成PPT', desc: '基于文档快速产出精美演示文稿', icon: 'fa-solid fa-file-powerpoint' },
+                        { title: '思维导图', desc: '一键将创意转化为结构化思维导图', icon: 'fa-solid fa-sitemap' }
+                    ],
+                    prototype: [
+                        { title: 'AI生成原型', desc: '智能生成全套交互原型，支持高保真还原', icon: 'fa-solid fa-wand-magic-sparkles' },
+                        { title: '图片转原型', desc: '上传设计图自动识别并生成可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage' },
+                        { title: '原型概念图', desc: '快速生成产品初期的概念设计图', icon: 'fa-solid fa-lightbulb' },
+                        { title: '网站转原型', desc: '输入网址快速转换为可编辑原型', icon: 'fa-solid fa-globe' },
+                        { title: 'HTML转原型', desc: '输入网址快速转换为可编辑原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'assets/html-to-proto.png' },
+                        { title: '交互方案生成', desc: '基于需求自动生成交互流程方案', icon: 'fa-solid fa-route' }
+                    ],
+                    planning: [
+                        { title: '需求文档PRD', desc: '一键生成结构化PRD，涵盖核心逻辑', icon: 'fa-solid fa-file-word' },
+                        { title: '竞品分析', desc: '多维度竞品深度对比，输出竞争力报告', icon: 'fa-solid fa-chart-pie' },
+                        { title: '用户调研', desc: '生成用户调研问卷及分析报告', icon: 'fa-solid fa-users' },
+                        { title: '产品截图评审', desc: '智能分析产品截图并提供优化建议', icon: 'fa-solid fa-magnifying-glass-plus' },
+                        { title: '会议纪要', desc: '智能整理会议内容生成纪要', icon: 'fa-solid fa-file-pen' },
+                        { title: '产品规划', desc: '智能化规划版本迭代，管理生命周期', icon: 'fa-solid fa-map-location-dot' }
+                    ],
+                    ppt: [
+                        { title: '产品规划PPT', desc: '生成专业的产品规划路演PPT', icon: 'fa-solid fa-business-time' },
+                        { title: 'AI美化PPT', desc: '智能优化PPT排版与视觉风格', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'assets/ppt-import.png' }
+                    ],
+                    ui: [
+                        { title: 'AI生成界面设计', desc: '快速生成高保真UI界面设计稿', icon: 'fa-solid fa-layer-group' },
+                        { title: 'AI生成图标', desc: '批量生成风格统一的系统图标', icon: 'fa-solid fa-icons' },
+                        { title: 'AI生成配图', desc: '智能生成高质量的UI配图资源', icon: 'fa-solid fa-image' },
+                        { title: 'UI规范评审', desc: 'AI视觉专家审查设计稿规范性', icon: 'fa-solid fa-ruler-combined' }
+                    ],
+                    marketing: [
+                        { title: '小红书内容生成', desc: '一键生成小红书爆款文案与配图', icon: 'fa-brands fa-instagram' },
+                        { title: 'SEO文章生成', desc: '生成符合SEO优化的产品推广文章', icon: 'fa-solid fa-magnifying-glass-chart' },
+                        { title: '营销物料', desc: '自动生成海报、Banner等营销素材', icon: 'fa-solid fa-bullhorn' }
+                    ],
+                    dev_test: [
+                        { title: '测试用例生成', desc: '智能生成覆盖核心路径的测试用例', icon: 'fa-solid fa-vial' },
+                        { title: '技术方案生成', desc: '基于需求自动生成系统架构与技术方案', icon: 'fa-solid fa-code-branch' },
+                        { title: '技术方案评估', desc: '全方位评估技术方案的可行性与风险', icon: 'fa-solid fa-magnifying-glass-chart' }
+                    ],
+                    charts: [
+                        { title: '思维导图', desc: '一键将创意转化为结构化思维导图', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'assets/whiteboard-v2.png' },
+                        { title: '流程图', desc: '智能梳理业务逻辑生成清晰流程图', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'assets/whiteboard-v2.png' },
+                        { title: '用户旅程图', desc: '可视化展示用户全流程体验触点', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'assets/whiteboard-v2.png' },
+                        { title: '项目进度图', desc: '自动生成甘特图或项目进度时间轴', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'assets/whiteboard-v2.png' }
+                    ]
+                };
+                const currentSubCategories = computed(() => subCategoriesMap[activeCategory.value] || subCategoriesMap.recommend);
+                const activeCategoryData = computed(() => categories.find(c => c.id === activeCategory.value));
+                const cases = [
+                    { title: 'AI学习助手PRD', img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-blue-50 to-indigo-100' },
+                    { title: '短视频App留存提升方案', img: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-cyan-50 to-blue-100' },
+                    { title: '调酒大师App', img: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-indigo-50 to-purple-100' },
+                    { title: '社交平台推荐机制调研', img: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-teal-50 to-green-100' },
+                    { title: '适老化UI评审与优化', img: 'https://images.unsplash.com/photo-1586717791821-3f44a5638d0f?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-rose-50 to-pink-100' },
+                    { title: '在线教育界面设计', img: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-sky-50 to-cyan-100' }
+                ];
+                
+
+                const handleSend = () => {
+                    if (!inputText.value.trim()) return;
+                    isSending.value = true;
+                    setTimeout(() => {
+                        isSending.value = false;
+                        inputText.value = '';
+                        autoResize();
+                        // 这里可以添加生成成功后的逻辑
+                    }, 2000); // 模拟2秒思考时间
+                };
+
+                // 处理卡片点击
+                const handleCardClick = (sub) => {
+                    if (sub.action === 'openNewTab') {
+                        // HTML转原型：新tab打开页面
+                        window.open(sub.url || 'html-to-prototype.html', '_blank');
+                    } else if (sub.action === 'uploadImage') {
+                        // 图片转原型：显示标签 + 打开文件选择器
+                        selectedSubCategory.value = sub.title;
+                        nextTick(() => {
+                            if (fileInputRef.value) {
+                                fileInputRef.value.click();
+                            }
+                        });
+                    } else {
+                        // 普通卡片：只显示标签
+                        selectedSubCategory.value = sub.title;
+                    }
+                };
+
+                // 处理文件选择
+                const handleFileSelected = (event) => {
+                    const files = event.target.files;
+                    if (files && files.length > 0) {
+                        // 这里可以处理上传的图片
+                        console.log('Selected files:', files);
+                        // 清空input以便下次可以选择相同文件
+                        event.target.value = '';
+                    }
+                };
+
+                onMounted(() => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MD AI demo.html:onMounted',message:'Checking z-indexes POST-FIX',data:{inputWrapperZ: window.getComputedStyle(document.querySelector('.ai-input-wrapper')).zIndex,collapseContainerZ: window.getComputedStyle(document.querySelector('.collapse-container')).zIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix'})}).catch(()=>{});
+                    // #endregion
+                    mounted.value = true;
+                    autoResize();
+                    
+                    // Click outside to close dropdown
+                    document.addEventListener('click', (e) => {
+                        if (thinkModeDropdownRef.value && !thinkModeDropdownRef.value.contains(e.target)) {
+                            showThinkModeDropdown.value = false;
+                        }
+                    });
+                });
+
+                    return { 
+                    inputText, activeCategory, selectedSubCategory, history, categories, 
+                    currentSubCategories, activeCategoryData, thinkMode, cases, tagRef, 
+                    inputIndent, greeting, textareaRef, autoResize,
+                    isSending, handleSend, mounted, fileInputRef, handleCardClick,
+                    handleFileSelected, isSidebarOpen, showThinkModeDropdown, thinkModeDropdownRef
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
