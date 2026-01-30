@@ -505,6 +505,40 @@
         .tab-scroll-container::-webkit-scrollbar {
             display: none;
         }
+        /* 极致的 Loading 动画 */
+        @keyframes orbit {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.2; }
+        }
+        @keyframes gradient-x {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes text-shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .loading-text-shimmer {
+            background: linear-gradient(90deg, #1F2937 0%, #818CF8 50%, #1F2937 100%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: text-shimmer 2.5s linear infinite;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+        }
     </style>
 </head>
 <body>
@@ -604,6 +638,7 @@
                                   ref="textareaRef"
                                   v-model="inputText"
                                   @input="autoResize"
+                                  @keydown.enter.prevent="!$event.shiftKey && handleSend()"
                                   :style="{ textIndent: inputIndent }"
                                   placeholder="描述您的创意，或者选择下方专业场景开始..."></textarea>
                     </div>
@@ -668,7 +703,54 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- 状态提示区域 (已移除，改为全屏 Loading) -->
+                    <!-- <transition name="fade">
+                        <div v-if="isAnalyzing" class="absolute top-full left-0 right-0 mt-3 flex justify-center">
+                            <div class="bg-indigo-600/90 text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg backdrop-blur-sm flex items-center gap-2 animate-pulse">
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                                AI正在分析用户上传的文件和资料...
+                            </div>
+                        </div>
+                    </transition> -->
                 </div>
+
+                <!-- AI Processing Overlay (Redesigned) -->
+                <transition name="fade">
+                    <div v-if="isAnalyzing" class="fixed inset-0 z-[100] flex items-center justify-center">
+                        <!-- Backdrop -->
+                        <div class="absolute inset-0 bg-white/40 backdrop-blur-xl transition-opacity duration-700"></div>
+                        
+                        <!-- Content -->
+                        <div class="relative z-10 glass-card rounded-[32px] p-12 max-w-sm w-full text-center transform transition-all duration-700 scale-100 flex flex-col items-center">
+                            
+                            <!-- Premium Animation Container -->
+                            <div class="relative w-28 h-28 mb-10 flex items-center justify-center">
+                                <!-- Glowing Background Orb -->
+                                <div class="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl animate-[pulse-glow_3s_infinite]"></div>
+                                
+                                <!-- Rotating Gradient Ring -->
+                                <div class="absolute inset-0 rounded-full p-[2px] animate-[orbit_3s_linear_infinite]" 
+                                     style="background: conic-gradient(from 0deg, transparent 0%, #6366f1 50%, transparent 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude;">
+                                </div>
+                                
+                                <!-- Inner Ring (Counter-rotating) -->
+                                <div class="absolute inset-2 rounded-full p-[1px] animate-[orbit_4s_linear_infinite_reverse] opacity-60" 
+                                     style="background: conic-gradient(from 180deg, transparent 0%, #ec4899 50%, transparent 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude;">
+                                </div>
+
+                                <!-- Center Icon with Pulse -->
+                                <div class="relative w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center z-10">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-2xl text-transparent bg-clip-text bg-gradient-to-tr from-indigo-500 to-purple-500"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Text -->
+                            <h3 class="text-lg font-bold loading-text-shimmer mb-2 tracking-wide">{{ loadingText }}</h3>
+                            <p class="text-xs text-gray-400 font-medium">AI 正在根据您的需求生成方案</p>
+                        </div>
+                    </div>
+                </transition>
 
                 <!-- L1 Tabs -->
                 <div class="flex gap-2 mb-6 transform transition-all duration-500 ease-out relative z-0" 
@@ -765,6 +847,9 @@
                 const thinkMode = ref('fast'); // 'fast' or 'deep'
                 const showThinkModeDropdown = ref(false);
                 const isSending = ref(false);
+                const isAnalyzing = ref(false);
+                const loadingStep = ref(1);
+                const loadingText = ref('');
                 const tagRef = ref(null);
                 const textareaRef = ref(null);
                 const fileInputRef = ref(null);
@@ -834,14 +919,14 @@
                         { title: '需求文档PRD', desc: '一键生成结构化PRD，涵盖核心逻辑', icon: 'fa-solid fa-file-word' },
                         { title: 'AI生成界面设计', desc: '快速生成高保真UI界面设计稿', icon: 'fa-solid fa-layer-group' },
                         { title: 'AI生成PPT', desc: '基于文档快速产出精美演示文稿', icon: 'fa-solid fa-file-powerpoint' },
-                        { title: '思维导图', desc: '一键将创意转化为结构化思维导图', icon: 'fa-solid fa-sitemap' }
+                        { title: '思维导图', desc: '一键将创意转化为结构化思维导图', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'whiteboard-v2.png' }
                     ],
                     prototype: [
                         { title: 'AI生成原型', desc: '智能生成全套交互原型，支持高保真还原', icon: 'fa-solid fa-wand-magic-sparkles' },
                         { title: '图片转原型', desc: '上传设计图自动识别并生成可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage' },
                         { title: '原型概念图', desc: '快速生成产品初期的概念设计图', icon: 'fa-solid fa-lightbulb' },
                         { title: '网站转原型', desc: '输入网址快速转换为可编辑原型', icon: 'fa-solid fa-globe' },
-                        { title: 'HTML转原型', desc: '输入网址快速转换为可编辑原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'assets/html-to-proto.png' },
+                        { title: 'HTML转原型', desc: '输入网址快速转换为可编辑原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png' },
                         { title: '交互方案生成', desc: '基于需求自动生成交互流程方案', icon: 'fa-solid fa-route' }
                     ],
                     planning: [
@@ -854,7 +939,7 @@
                     ],
                     ppt: [
                         { title: '产品规划PPT', desc: '生成专业的产品规划路演PPT', icon: 'fa-solid fa-business-time' },
-                        { title: 'AI美化PPT', desc: '智能优化PPT排版与视觉风格', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'assets/ppt-import.png' }
+                        { title: 'AI美化PPT', desc: '智能优化PPT排版与视觉风格', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'ppt-import.png' }
                     ],
                     ui: [
                         { title: 'AI生成界面设计', desc: '快速生成高保真UI界面设计稿', icon: 'fa-solid fa-layer-group' },
@@ -873,10 +958,10 @@
                         { title: '技术方案评估', desc: '全方位评估技术方案的可行性与风险', icon: 'fa-solid fa-magnifying-glass-chart' }
                     ],
                     charts: [
-                        { title: '思维导图', desc: '一键将创意转化为结构化思维导图', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'assets/whiteboard-v2.png' },
-                        { title: '流程图', desc: '智能梳理业务逻辑生成清晰流程图', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'assets/whiteboard-v2.png' },
-                        { title: '用户旅程图', desc: '可视化展示用户全流程体验触点', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'assets/whiteboard-v2.png' },
-                        { title: '项目进度图', desc: '自动生成甘特图或项目进度时间轴', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'assets/whiteboard-v2.png' }
+                        { title: '思维导图', desc: '一键将创意转化为结构化思维导图', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'whiteboard-v2.png' },
+                        { title: '流程图', desc: '智能梳理业务逻辑生成清晰流程图', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'whiteboard-v2.png' },
+                        { title: '用户旅程图', desc: '可视化展示用户全流程体验触点', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'whiteboard-v2.png' },
+                        { title: '项目进度图', desc: '自动生成甘特图或项目进度时间轴', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'whiteboard-v2.png' }
                     ]
                 };
                 const currentSubCategories = computed(() => subCategoriesMap[activeCategory.value] || subCategoriesMap.recommend);
@@ -889,24 +974,54 @@
                     { title: '适老化UI评审与优化', img: 'https://images.unsplash.com/photo-1586717791821-3f44a5638d0f?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-rose-50 to-pink-100' },
                     { title: '在线教育界面设计', img: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600&h=400&fit=crop', bgClass: 'bg-gradient-to-br from-sky-50 to-cyan-100' }
                 ];
-                
 
                 const handleSend = () => {
                     if (!inputText.value.trim()) return;
-                    isSending.value = true;
-                    setTimeout(() => {
-                        isSending.value = false;
-                        inputText.value = '';
-                        autoResize();
-                        // 这里可以添加生成成功后的逻辑
-                    }, 2000); // 模拟2秒思考时间
+                    
+                    // 检查是否是"产品规划PPT"场景
+                    if (selectedSubCategory.value === '产品规划PPT') {
+                        isSending.value = true;
+                        isAnalyzing.value = true;
+                        loadingStep.value = 1;
+                        
+                        // Step 1: Start
+                        loadingText.value = '正在解析内容...';
+                        
+                        // Wait for 4.5s then finish
+                        setTimeout(() => {
+                            isSending.value = false;
+                            isAnalyzing.value = false;
+                            inputText.value = '';
+                            autoResize();
+                            const targetUrl = 'ppt-outline.png';
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'md-ai/index.html:handleSend',message:'Opening PPT outline FLAT PATH',data:{targetUrl:targetUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-2'})}).catch(()=>{});
+                            // #endregion
+                            window.open(targetUrl, '_blank');
+                        }, 4500);
+                    } else {
+                        // 原有逻辑
+                        isSending.value = true;
+                        setTimeout(() => {
+                            isSending.value = false;
+                            inputText.value = '';
+                            autoResize();
+                        }, 2000); // 模拟2秒思考时间
+                    }
                 };
 
                 // 处理卡片点击
                 const handleCardClick = (sub) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'md-ai/index.html:handleCardClick',message:'Card clicked',data:{title:sub.title,action:sub.action,url:sub.url,baseURI:document.baseURI},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-2',hypothesisId:'A/B'})}).catch(()=>{});
+                    // #endregion
                     if (sub.action === 'openNewTab') {
+                        const targetUrl = sub.url || 'html-to-prototype.html';
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'md-ai/index.html:handleCardClick',message:'Opening new tab',data:{targetUrl:targetUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-2',hypothesisId:'A'})}).catch(()=>{});
+                        // #endregion
                         // HTML转原型：新tab打开页面
-                        window.open(sub.url || 'html-to-prototype.html', '_blank');
+                        window.open(targetUrl, '_blank');
                     } else if (sub.action === 'uploadImage') {
                         // 图片转原型：显示标签 + 打开文件选择器
                         selectedSubCategory.value = sub.title;
@@ -934,7 +1049,7 @@
 
                 onMounted(() => {
                     // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MD AI demo.html:onMounted',message:'Checking z-indexes POST-FIX',data:{inputWrapperZ: window.getComputedStyle(document.querySelector('.ai-input-wrapper')).zIndex,collapseContainerZ: window.getComputedStyle(document.querySelector('.collapse-container')).zIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix'})}).catch(()=>{});
+                    fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'md-ai/index.html:onMounted',message:'App mounted',data:{inputWrapperZ: window.getComputedStyle(document.querySelector('.ai-input-wrapper')).zIndex,collapseContainerZ: window.getComputedStyle(document.querySelector('.collapse-container')).zIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-2'})}).catch(()=>{});
                     // #endregion
                     mounted.value = true;
                     autoResize();
@@ -951,8 +1066,9 @@
                     inputText, activeCategory, selectedSubCategory, history, categories, 
                     currentSubCategories, activeCategoryData, thinkMode, cases, tagRef, 
                     inputIndent, greeting, textareaRef, autoResize,
-                    isSending, handleSend, mounted, fileInputRef, handleCardClick,
-                    handleFileSelected, isSidebarOpen, showThinkModeDropdown, thinkModeDropdownRef
+                    isSending, isAnalyzing, handleSend, mounted, fileInputRef, handleCardClick,
+                    handleFileSelected, isSidebarOpen, showThinkModeDropdown, thinkModeDropdownRef,
+                    loadingStep, loadingText
                 };
             }
         }).mount('#app');
