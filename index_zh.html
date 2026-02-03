@@ -989,8 +989,8 @@
                 const handleSend = () => {
                     if (!inputText.value.trim()) return;
                     
-                    // 检查是否是"产品规划PPT"场景
-                    if (selectedSubCategory.value === '产品规划PPT') {
+                    // 检查是否是"AI生成PPT"场景：全屏加载动效后新 tab 打开图片
+                    if (selectedSubCategory.value === 'AI生成PPT') {
                         isSending.value = true;
                         isAnalyzing.value = true;
                         loadingStep.value = 1;
