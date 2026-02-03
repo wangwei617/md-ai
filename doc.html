@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>墨刀AI 4.0 - 交互说明文档</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Github Markdown CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'PingFang SC', sans-serif;
+            background-color: #FAFBFC;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        @media (max-width: 767px) {
+            .markdown-body {
+                padding: 15px;
+            }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <!-- Back Button -->
+    <div class="max-w-[980px] mx-auto mb-6 flex justify-between items-center">
+        <a href="index.html" class="inline-flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors px-4 py-2 bg-white rounded-lg shadow-sm hover:shadow border border-gray-100">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>返回导航</span>
+        </a>
+        <div class="text-sm text-gray-400">
+            <i class="fa-regular fa-clock mr-1"></i>
+            最后更新: 2026-02-02
+        </div>
+    </div>
+
+    <!-- Content Container -->
+    <div id="content" class="markdown-body">
+        <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-indigo-500"></i>
+            <p>正在加载文档...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration for marked
+        marked.use({
+            gfm: true,
+            breaks: true,
+            headerIds: true
+        });
+
+        // Fetch and render markdown
+        async function loadMarkdown() {
+            try {
+                // Determine which file to load - default to the interaction guide
+                // Use encodeURIComponent for the filename with spaces
+                const response = await fetch('md%20ai%204.0%E4%BA%A4%E4%BA%92%E8%AF%B4%E6%98%8E.md');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                const contentDiv = document.getElementById('content');
+                
+                // Render markdown
+                contentDiv.innerHTML = marked.parse(text);
+                
+                // Add some post-processing if needed (e.g. external links open in new tab)
+                contentDiv.querySelectorAll('a').forEach(link => {
+                    if (link.hostname !== window.location.hostname) {
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error loading markdown:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="text-center py-20 text-red-500 bg-red-50 rounded-lg">
+                        <i class="fa-solid fa-circle-exclamation text-4xl mb-4"></i>
+                        <h3 class="text-lg font-bold mb-2">加载失败</h3>
+                        <p class="text-sm opacity-80">无法加载文档内容，请检查文件是否存在。</p>
+                        <p class="text-xs mt-4 font-mono bg-red-100 inline-block px-2 py-1 rounded text-red-700">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        loadMarkdown();
+    </script>
+</body>
+</html>

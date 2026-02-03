@@ -620,11 +620,12 @@
                     <div class="flex justify-between items-center mt-4 pt-2">
                         <!-- Think Mode Dropdown -->
                         <div class="relative" ref="thinkModeDropdownRef">
-                            <button @click="showThinkModeDropdown = !showThinkModeDropdown" 
-                                    class="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 hover:bg-gray-50 text-gray-600 border border-transparent hover:border-gray-200">
+                            <button @click="!isThinkModeDisabled && (showThinkModeDropdown = !showThinkModeDropdown)" 
+                                    :class="isThinkModeDisabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-50 hover:border-gray-200'"
+                                    class="flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 text-gray-600 border border-transparent">
                                 <i :class="thinkMode === 'deep' ? 'fa-solid fa-brain text-indigo-600' : 'fa-solid fa-bolt text-amber-500'"></i>
                                 <span>{{ thinkMode === 'deep' ? 'Deep think' : 'Fast mode' }}</span>
-                                <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200" 
+                                <i v-if="!isThinkModeDisabled" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200" 
                                    :class="{ 'rotate-180': showThinkModeDropdown }"></i>
                             </button>
                             
@@ -850,6 +851,10 @@
                     return selectedSubCategory.value === 'AI PPT';
                 });
 
+                const isThinkModeDisabled = computed(() => {
+                    return selectedSubCategory.value === 'AI PPT';
+                });
+
                 watch(selectedSubCategory, async (newVal) => {
                     if (newVal) {
                         await nextTick();
@@ -1037,7 +1042,7 @@
                     inputIndent, greeting, textareaRef, autoResize,
                     isSending, isAnalyzing, handleSend, mounted, fileInputRef, handleCardClick,
                     handleFileSelected, isSidebarOpen, showThinkModeDropdown, thinkModeDropdownRef,
-                    loadingStep, loadingText, isAttachmentDisabled
+                    loadingStep, loadingText, isAttachmentDisabled, isThinkModeDisabled
                 };
             }
         }).mount('#app');
