@@ -614,7 +614,7 @@
                                   @input="autoResize"
                                   @keydown.enter.prevent="!$event.shiftKey && handleSend()"
                                   :style="{ textIndent: inputIndent }"
-                                  placeholder="Describe your idea, or select a scenario below..."></textarea>
+                                  :placeholder="inputPlaceholder"></textarea>
                     </div>
                     
                     <div class="flex justify-between items-center mt-4 pt-2">
@@ -814,6 +814,7 @@
         createApp({
             setup() {
                 const inputText = ref('');
+                const inputPlaceholder = ref('Describe your idea, or select a scenario below...');
                 const isSidebarOpen = ref(false);
                 const activeCategory = ref('recommend');
                 const selectedSubCategory = ref(null);
@@ -864,6 +865,8 @@
                         }
                     } else {
                         inputIndent.value = '0px';
+                        // Restore default placeholder
+                        inputPlaceholder.value = 'Describe your idea, or select a scenario below...';
                     }
                 });
 
@@ -895,48 +898,48 @@
                 ];
                 const subCategoriesMap = {
                     recommend: [
-                        { title: 'AI Prototype', desc: 'Generate interactive prototype from text', icon: 'fa-solid fa-wand-magic-sparkles' },
-                        { title: 'Image to prototype', desc: 'Convert image to editable prototype', icon: 'fa-solid fa-image', action: 'uploadImage' },
-                        { title: 'PRD', desc: 'Generate detailed PRD', icon: 'fa-solid fa-file-word' },
-                        { title: 'HTML to prototype', desc: 'Convert URL to prototype', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png' },
-                        { title: 'Competitive analysis', desc: 'Compare and generate report', icon: 'fa-solid fa-chart-pie' },
-                        { title: 'Product review', desc: 'Review prototype & suggest', icon: 'fa-solid fa-magnifying-glass-plus' }
+                        { title: 'AI Prototype', desc: 'Generate interactive prototype from text', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: 'Describe the prototype features and use case, e.g., design a course detail page for an online education platform...' },
+                        { title: 'Image to prototype', desc: 'Convert image to editable prototype', icon: 'fa-solid fa-image', action: 'uploadImage', placeholderText: 'Upload design image or screenshot, I will convert it to an editable prototype...' },
+                        { title: 'PRD', desc: 'Generate detailed PRD', icon: 'fa-solid fa-file-word', placeholderText: 'Describe product requirements, I will generate a complete PRD document...' },
+                        { title: 'HTML to prototype', desc: 'Convert URL to prototype', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png', placeholderText: 'Enter webpage address, I will convert it to a high-fidelity prototype...' },
+                        { title: 'Competitive analysis', desc: 'Compare and generate report', icon: 'fa-solid fa-chart-pie', placeholderText: 'Provide competitor name or industry category (e.g., online education, SaaS tools), I will conduct multi-dimensional analysis...' },
+                        { title: 'Product review', desc: 'Review prototype & suggest', icon: 'fa-solid fa-magnifying-glass-plus', placeholderText: 'Upload or describe your product solution, I will provide professional review suggestions...' }
                     ],
                     prototype: [
-                        { title: 'AI Prototype', desc: 'Generate interactive prototype from text', icon: 'fa-solid fa-wand-magic-sparkles' },
-                        { title: 'Image to prototype', desc: 'Convert image to editable prototype', icon: 'fa-solid fa-image', action: 'uploadImage' },
-                        { title: 'HTML to prototype', desc: 'Convert URL to prototype', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png' },
-                        { title: 'Interaction flow', desc: 'Generate flow & specs', icon: 'fa-solid fa-route' }
+                        { title: 'AI Prototype', desc: 'Generate interactive prototype from text', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: 'Describe the prototype features and use case, e.g., design a course detail page for an online education platform...' },
+                        { title: 'Image to prototype', desc: 'Convert image to editable prototype', icon: 'fa-solid fa-image', action: 'uploadImage', placeholderText: 'Upload design image or screenshot, I will convert it to an editable prototype...' },
+                        { title: 'HTML to prototype', desc: 'Convert URL to prototype', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png', placeholderText: 'Enter webpage address, I will convert it to a high-fidelity prototype...' },
+                        { title: 'Interaction flow', desc: 'Generate flow & specs', icon: 'fa-solid fa-route', placeholderText: 'Describe page flow and interaction requirements, I will generate detailed interaction specs...' }
                     ],
                     planning: [
-                        { title: 'PRD', desc: 'Generate detailed PRD', icon: 'fa-solid fa-file-word' },
-                        { title: 'Competitive analysis', desc: 'Compare and generate report', icon: 'fa-solid fa-chart-pie' },
-                        { title: 'User research', desc: 'Generate survey & persona', icon: 'fa-solid fa-users' },
-                        { title: 'Product review', desc: 'Review prototype & suggest', icon: 'fa-solid fa-magnifying-glass-plus' },
-                        { title: 'Product planning', desc: 'Create roadmap & plan', icon: 'fa-solid fa-map-location-dot' }
+                        { title: 'PRD', desc: 'Generate detailed PRD', icon: 'fa-solid fa-file-word', placeholderText: 'Describe product requirements, I will generate a complete PRD document...' },
+                        { title: 'Competitive analysis', desc: 'Compare and generate report', icon: 'fa-solid fa-chart-pie', placeholderText: 'Provide competitor name or industry category (e.g., online education, SaaS tools), I will conduct multi-dimensional analysis...' },
+                        { title: 'User research', desc: 'Generate survey & persona', icon: 'fa-solid fa-users', placeholderText: 'Describe research objectives, I will generate survey questionnaire and user persona analysis...' },
+                        { title: 'Product review', desc: 'Review prototype & suggest', icon: 'fa-solid fa-magnifying-glass-plus', placeholderText: 'Upload or describe your product solution, I will provide professional review suggestions...' },
+                        { title: 'Product planning', desc: 'Create roadmap & plan', icon: 'fa-solid fa-map-location-dot', placeholderText: 'Describe product goals and current stage, I will create version iteration plan...' }
                     ],
                     ppt: [
-                        { title: 'AI PPT', desc: 'Generate presentation from topic', icon: 'fa-solid fa-business-time' },
-                        { title: 'AI PPT polish', desc: 'Optimize layout & style', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'ppt-upload-demo.png' }
+                        { title: 'AI PPT', desc: 'Generate presentation from topic', icon: 'fa-solid fa-business-time', placeholderText: 'Describe PPT topic and key points, I will quickly generate a complete presentation...' },
+                        { title: 'AI PPT polish', desc: 'Optimize layout & style', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'ppt-upload-demo.png', placeholderText: 'Upload your PPT file, I will optimize layout and color scheme...' }
                     ],
                     ui: [
                         { title: 'AI UI design', desc: 'Generate UI from text', icon: 'fa-solid fa-layer-group', comingSoon: true },
-                        { title: 'UI review', desc: 'Check consistency & report', icon: 'fa-solid fa-ruler-combined' }
+                        { title: 'UI review', desc: 'Check consistency & report', icon: 'fa-solid fa-ruler-combined', placeholderText: 'Upload design files or describe UI guidelines, I will check design consistency...' }
                     ],
                     marketing: [
-                        { title: 'SEO article', desc: 'Generate SEO articles', icon: 'fa-solid fa-magnifying-glass-chart' },
+                        { title: 'SEO article', desc: 'Generate SEO articles', icon: 'fa-solid fa-magnifying-glass-chart', placeholderText: 'Provide article topic and keywords, I will generate SEO-friendly articles...' },
                     ],
                     dev_test: [
-                        { title: 'Test cases', desc: 'Generate test cases', icon: 'fa-solid fa-vial' },
-                        { title: 'Tech solution', desc: 'Generate architecture', icon: 'fa-solid fa-code-branch' },
-                        { title: 'Solution review', desc: 'Analyze feasibility & risks', icon: 'fa-solid fa-magnifying-glass-chart' }
+                        { title: 'Test cases', desc: 'Generate test cases', icon: 'fa-solid fa-vial', placeholderText: 'Describe feature requirements or upload requirement docs, I will generate complete test cases...' },
+                        { title: 'Tech solution', desc: 'Generate architecture', icon: 'fa-solid fa-code-branch', placeholderText: 'Describe system requirements and technical needs, I will generate technical solution...' },
+                        { title: 'Solution review', desc: 'Analyze feasibility & risks', icon: 'fa-solid fa-magnifying-glass-chart', placeholderText: 'Provide technical solution document, I will analyze feasibility...' }
                     ],
                     charts: [
-                        { title: 'Mind map', desc: 'Convert ideas to mind map', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: 'Flowchart', desc: 'Draw standard flowchart', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: 'User journey', desc: 'Visualize user journey', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: 'Gantt chart', desc: 'Generate Gantt chart', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: 'AntV-X6 flowchart', desc: 'Generate code & preview', icon: 'fa-solid fa-share-nodes' }
+                        { title: 'Mind map', desc: 'Convert ideas to mind map', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: 'Describe core topic and branches, I will generate mind map...' },
+                        { title: 'Flowchart', desc: 'Draw standard flowchart', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: 'Describe business logic and relationships, I will draw standard flowchart...' },
+                        { title: 'User journey', desc: 'Visualize user journey', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: 'Describe user scenarios and key touchpoints, I will generate user journey map...' },
+                        { title: 'Gantt chart', desc: 'Generate Gantt chart', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: 'Provide project tasks and timelines, I will generate Gantt chart...' },
+                        { title: 'AntV-X6 flowchart', desc: 'Generate code & preview', icon: 'fa-solid fa-share-nodes', placeholderText: 'Describe flowchart structure and node relationships, I will generate AntV-X6 flowchart code...' }
                     ]
                 };
                 const currentSubCategories = computed(() => subCategoriesMap[activeCategory.value] || subCategoriesMap.recommend);
@@ -999,16 +1002,22 @@
                         // HTML to prototype: open new tab
                         window.open(targetUrl, '_blank');
                     } else if (sub.action === 'uploadImage') {
-                        // Image to prototype: show tag + open file selector
+                        // Image to prototype: show tag + update placeholder + open file selector
                         selectedSubCategory.value = sub.title;
+                        if (sub.placeholderText) {
+                            inputPlaceholder.value = sub.placeholderText;
+                        }
                         nextTick(() => {
                             if (fileInputRef.value) {
                                 fileInputRef.value.click();
                             }
                         });
                     } else {
-                        // Standard card: show tag only
+                        // Standard card: show tag + update placeholder
                         selectedSubCategory.value = sub.title;
+                        if (sub.placeholderText) {
+                            inputPlaceholder.value = sub.placeholderText;
+                        }
                     }
                 };
 
@@ -1039,7 +1048,7 @@
                 });
 
                 return { 
-                    inputText, activeCategory, selectedSubCategory, history, categories, 
+                    inputText, inputPlaceholder, activeCategory, selectedSubCategory, history, categories, 
                     currentSubCategories, activeCategoryData, thinkMode, cases, tagRef, 
                     inputIndent, greeting, textareaRef, autoResize,
                     isSending, isAnalyzing, handleSend, mounted, fileInputRef, handleCardClick,

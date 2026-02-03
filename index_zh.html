@@ -640,7 +640,7 @@
                                   @input="autoResize"
                                   @keydown.enter.prevent="!$event.shiftKey && handleSend()"
                                   :style="{ textIndent: inputIndent }"
-                                  placeholder="描述您的创意，或者选择下方专业场景开始..."></textarea>
+                                  :placeholder="inputPlaceholder"></textarea>
                     </div>
                     
                     <div class="flex justify-between items-center mt-4 pt-2">
@@ -850,6 +850,7 @@
         createApp({
             setup() {
                 const inputText = ref('');
+                const inputPlaceholder = ref('描述您的创意，或者选择下方专业场景开始...');
                 const isSidebarOpen = ref(false);
                 const activeCategory = ref('recommend');
                 const selectedSubCategory = ref(null);
@@ -900,6 +901,8 @@
                         }
                     } else {
                         inputIndent.value = '0px';
+                        // 恢复默认 placeholder
+                        inputPlaceholder.value = '描述您的创意，或者选择下方专业场景开始...';
                     }
                 });
 
@@ -931,48 +934,48 @@
                 ];
                 const subCategoriesMap = {
                     recommend: [
-                        { title: 'AI生成原型', desc: '根据文本描述生成全套交互原型', icon: 'fa-solid fa-wand-magic-sparkles' },
-                        { title: '图片转原型', desc: '上传设计图或截图，自动转换为可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage' },
-                        { title: '需求文档PRD', desc: '快速生成包含详细逻辑的产品需求文档', icon: 'fa-solid fa-file-word' },
-                        { title: 'HTML转原型', desc: '输入网页链接，还原为高保真原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png' },
-                        { title: '竞品分析', desc: '多维度对比分析，自动输出调研报告', icon: 'fa-solid fa-chart-pie' },
-                        { title: '产品方案评审', desc: '智能评审原型方案，提供优化建议', icon: 'fa-solid fa-magnifying-glass-plus' }
+                        { title: 'AI生成原型', desc: '根据文本描述生成全套交互原型', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: '请描述您想要创建的原型功能和应用场景，例如：设计一个在线教育平台的课程详情页...' },
+                        { title: '图片转原型', desc: '上传设计图或截图，自动转换为可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage', placeholderText: '请上传设计图或截图，我将帮您转换为可编辑的原型...' },
+                        { title: '需求文档PRD', desc: '快速生成包含详细逻辑的产品需求文档', icon: 'fa-solid fa-file-word', placeholderText: '请描述产品需求，我将为您生成完整的PRD文档...' },
+                        { title: 'HTML转原型', desc: '输入网页链接，还原为高保真原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png', placeholderText: '请输入网页地址，我将还原为高保真原型...' },
+                        { title: '竞品分析', desc: '多维度对比分析，自动输出调研报告', icon: 'fa-solid fa-chart-pie', placeholderText: '请提供竞品名称或行业类别（如在线教育、SaaS工具等），我将进行多维度分析...' },
+                        { title: '产品方案评审', desc: '智能评审原型方案，提供优化建议', icon: 'fa-solid fa-magnifying-glass-plus', placeholderText: '请上传或描述您的产品方案，我将提供专业评审建议...' }
                     ],
                     prototype: [
-                        { title: 'AI生成原型', desc: '根据文本描述生成全套交互原型', icon: 'fa-solid fa-wand-magic-sparkles' },
-                        { title: '图片转原型', desc: '上传设计图或截图，自动转换为可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage' },
-                        { title: 'HTML转原型', desc: '输入网页链接，还原为高保真原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png' },
-                        { title: '交互方案生成', desc: '自动梳理页面流程，生成交互说明', icon: 'fa-solid fa-route' }
+                        { title: 'AI生成原型', desc: '根据文本描述生成全套交互原型', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: '请描述您想要创建的原型功能和应用场景，例如：设计一个在线教育平台的课程详情页...' },
+                        { title: '图片转原型', desc: '上传设计图或截图，自动转换为可编辑原型', icon: 'fa-solid fa-image', action: 'uploadImage', placeholderText: '请上传设计图或截图，我将帮您转换为可编辑的原型...' },
+                        { title: 'HTML转原型', desc: '输入网页链接，还原为高保真原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png', placeholderText: '请输入网页地址，我将还原为高保真原型...' },
+                        { title: '交互方案生成', desc: '自动梳理页面流程，生成交互说明', icon: 'fa-solid fa-route', placeholderText: '请描述页面流程和交互需求，我将生成详细的交互说明文档...' }
                     ],
                     planning: [
-                        { title: '需求文档PRD', desc: '快速生成包含详细逻辑的产品需求文档', icon: 'fa-solid fa-file-word' },
-                        { title: '竞品分析', desc: '多维度对比分析，自动输出调研报告', icon: 'fa-solid fa-chart-pie' },
-                        { title: '用户调研', desc: '自动生成调研问卷和用户画像分析', icon: 'fa-solid fa-users' },
-                        { title: '产品方案评审', desc: '智能评审原型方案，提供优化建议', icon: 'fa-solid fa-magnifying-glass-plus' },
-                        { title: '产品规划', desc: '制定版本迭代计划，生成Roadmap', icon: 'fa-solid fa-map-location-dot' }
+                        { title: '需求文档PRD', desc: '快速生成包含详细逻辑的产品需求文档', icon: 'fa-solid fa-file-word', placeholderText: '请描述产品需求，我将为您生成完整的PRD文档...' },
+                        { title: '竞品分析', desc: '多维度对比分析，自动输出调研报告', icon: 'fa-solid fa-chart-pie', placeholderText: '请提供竞品名称或行业类别（如在线教育、SaaS工具等），我将进行多维度分析...' },
+                        { title: '用户调研', desc: '自动生成调研问卷和用户画像分析', icon: 'fa-solid fa-users', placeholderText: '请描述调研目标，我将为您生成调研问卷和用户画像分析...' },
+                        { title: '产品方案评审', desc: '智能评审原型方案，提供优化建议', icon: 'fa-solid fa-magnifying-glass-plus', placeholderText: '请上传或描述您的产品方案，我将提供专业评审建议...' },
+                        { title: '产品规划', desc: '制定版本迭代计划，生成Roadmap', icon: 'fa-solid fa-map-location-dot', placeholderText: '请描述产品目标和当前阶段，我将为您制定版本迭代计划...' }
                     ],
                     ppt: [
-                        { title: 'AI生成PPT', desc: '输入主题，快速生成演示文稿', icon: 'fa-solid fa-business-time' },
-                        { title: 'AI美化PPT', desc: '一键优化排版配色，提升文档质感', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'ppt-upload-demo.png' }
+                        { title: 'AI生成PPT', desc: '输入主题，快速生成演示文稿', icon: 'fa-solid fa-business-time', placeholderText: '请描述PPT主题和内容要点，我将为您快速生成完整的演示文稿...' },
+                        { title: 'AI美化PPT', desc: '一键优化排版配色，提升文档质感', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'ppt-upload-demo.png', placeholderText: '请上传您的PPT文件，我将一键优化排版配色...' }
                     ],
                     ui: [
                         { title: 'AI生成界面设计', desc: '根据描述生成高保真UI界面', icon: 'fa-solid fa-layer-group', comingSoon: true },
-                        { title: 'UI规范评审', desc: '检查设计一致性，输出规范评审报告', icon: 'fa-solid fa-ruler-combined' }
+                        { title: 'UI规范评审', desc: '检查设计一致性，输出规范评审报告', icon: 'fa-solid fa-ruler-combined', placeholderText: '请上传设计稿或描述UI规范要求，我将检查设计一致性...' }
                     ],
                     marketing: [
-                        { title: 'SEO文章生成', desc: '生成利于搜索引擎收录的推广文章', icon: 'fa-solid fa-magnifying-glass-chart' },
+                        { title: 'SEO文章生成', desc: '生成利于搜索引擎收录的推广文章', icon: 'fa-solid fa-magnifying-glass-chart', placeholderText: '请提供文章主题和关键词，我将为您生成利于搜索引擎收录的推广文章...' },
                     ],
                     dev_test: [
-                        { title: '测试用例生成', desc: '自动解析需求，生成完整测试用例', icon: 'fa-solid fa-vial' },
-                        { title: '技术方案生成', desc: '根据需求生成系统架构与技术选型', icon: 'fa-solid fa-code-branch' },
-                        { title: '技术方案评估', desc: '分析技术方案可行性，识别潜在风险', icon: 'fa-solid fa-magnifying-glass-chart' }
+                        { title: '测试用例生成', desc: '自动解析需求，生成完整测试用例', icon: 'fa-solid fa-vial', placeholderText: '请描述功能需求或上传需求文档，我将自动解析并生成完整的测试用例...' },
+                        { title: '技术方案生成', desc: '根据需求生成系统架构与技术选型', icon: 'fa-solid fa-code-branch', placeholderText: '请描述系统需求和技术要求，我将为您生成技术方案...' },
+                        { title: '技术方案评估', desc: '分析技术方案可行性，识别潜在风险', icon: 'fa-solid fa-magnifying-glass-chart', placeholderText: '请提供技术方案文档，我将分析方案的可行性...' }
                     ],
                     charts: [
-                        { title: '思维导图', desc: '梳理核心思路，一键转为思维导图', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: '流程图', desc: '描述业务逻辑，自动绘制标准流程图', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: '用户旅程图', desc: '可视化用户行为路径与情感体验', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: '项目进度图', desc: '生成甘特图，可视化管理项目进度', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'whiteboard-v2.png' },
-                        { title: '生成AntV-X6流程图', desc: '生成可二次开发的流程图代码与预览', icon: 'fa-solid fa-share-nodes' }
+                        { title: '思维导图', desc: '梳理核心思路，一键转为思维导图', icon: 'fa-solid fa-sitemap', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: '请描述核心主题和分支内容，我将为您生成思维导图...' },
+                        { title: '流程图', desc: '描述业务逻辑，自动绘制标准流程图', icon: 'fa-solid fa-diagram-project', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: '请描述业务流程和逻辑关系，我将自动绘制标准流程图...' },
+                        { title: '用户旅程图', desc: '可视化用户行为路径与情感体验', icon: 'fa-solid fa-shoe-prints', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: '请描述用户使用场景和关键触点，我将为您生成用户旅程图...' },
+                        { title: '项目进度图', desc: '生成甘特图，可视化管理项目进度', icon: 'fa-solid fa-bars-progress', action: 'openNewTab', url: 'whiteboard-v2.png', placeholderText: '请提供项目任务和时间节点，我将为您生成甘特图...' },
+                        { title: '生成AntV-X6流程图', desc: '生成可二次开发的流程图代码与预览', icon: 'fa-solid fa-share-nodes', placeholderText: '请描述流程图的结构和节点关系，我将生成AntV-X6流程图代码...' }
                     ]
                 };
                 const currentSubCategories = computed(() => subCategoriesMap[activeCategory.value] || subCategoriesMap.recommend);
@@ -1035,16 +1038,22 @@
                         // HTML转原型：新tab打开页面
                         window.open(targetUrl, '_blank');
                     } else if (sub.action === 'uploadImage') {
-                        // 图片转原型：显示标签 + 打开文件选择器
+                        // 图片转原型：显示标签 + 更新placeholder + 打开文件选择器
                         selectedSubCategory.value = sub.title;
+                        if (sub.placeholderText) {
+                            inputPlaceholder.value = sub.placeholderText;
+                        }
                         nextTick(() => {
                             if (fileInputRef.value) {
                                 fileInputRef.value.click();
                             }
                         });
                     } else {
-                        // 普通卡片：只显示标签
+                        // 普通卡片：显示标签 + 更新placeholder
                         selectedSubCategory.value = sub.title;
+                        if (sub.placeholderText) {
+                            inputPlaceholder.value = sub.placeholderText;
+                        }
                     }
                 };
 
@@ -1075,7 +1084,7 @@
                 });
 
                     return { 
-                    inputText, activeCategory, selectedSubCategory, history, categories, 
+                    inputText, inputPlaceholder, activeCategory, selectedSubCategory, history, categories, 
                     currentSubCategories, activeCategoryData, thinkMode, cases, tagRef, 
                     inputIndent, greeting, textareaRef, autoResize,
                     isSending, isAnalyzing, handleSend, mounted, fileInputRef, handleCardClick,
