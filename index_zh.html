@@ -790,19 +790,20 @@
                             <div v-for="sub in currentSubCategories" 
                                  :key="sub.title" 
                                  @click="handleCardClick(sub)"
-                                 class="scenario-card group min-w-0">
-                                <div class="card-icon-box bg-gray-50 transition-all duration-300 group-hover:scale-105" :class="activeCategoryData.bg">
+                                 :class="['scenario-card group min-w-0 relative', sub.comingSoon ? 'cursor-default' : '']">
+                                <span v-if="sub.comingSoon" class="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[11px] font-semibold border border-amber-200/60">敬请期待</span>
+                                <div class="card-icon-box bg-gray-50 transition-all duration-300 group-hover:scale-105" :class="[activeCategoryData.bg, sub.comingSoon ? 'opacity-70' : '']">
                                     <i :class="sub.icon || activeCategoryData.icon" :style="{ color: activeCategoryData.color }"></i>
                                 </div>
                                 <div class="flex-1">
-                                    <h4 class="text-[14px] font-black text-gray-800 mb-1 group-hover:text-indigo-600 transition-colors">{{ sub.title }}</h4>
+                                    <h4 class="text-[14px] font-black text-gray-800 mb-1 transition-colors" :class="sub.comingSoon ? '' : 'group-hover:text-indigo-600'">{{ sub.title }}</h4>
                                     <p class="text-[11px] text-gray-400 font-medium leading-tight line-clamp-2">{{ sub.desc }}</p>
                                 </div>
                                 <!-- 新tab打开箭头 -->
-                                <i v-if="sub.action === 'openNewTab'" 
+                                <i v-if="!sub.comingSoon && sub.action === 'openNewTab'" 
                                    class="fa-solid fa-arrow-up-right-from-square text-xs text-gray-300 opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all"></i>
                                 <!-- 普通箭头 -->
-                                <i v-else 
+                                <i v-else-if="!sub.comingSoon" 
                                    class="fa-solid fa-chevron-right text-xs text-gray-300 opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all"></i>
                             </div>
                         </div>
@@ -955,7 +956,7 @@
                         { title: 'AI美化PPT', desc: '一键优化排版配色，提升文档质感', icon: 'fa-solid fa-wand-magic', action: 'openNewTab', url: 'ppt-upload-demo.png' }
                     ],
                     ui: [
-                        { title: 'AI生成界面设计', desc: '根据描述生成高保真UI界面', icon: 'fa-solid fa-layer-group' },
+                        { title: 'AI生成界面设计', desc: '根据描述生成高保真UI界面', icon: 'fa-solid fa-layer-group', comingSoon: true },
                         { title: 'UI规范评审', desc: '检查设计一致性，输出规范评审报告', icon: 'fa-solid fa-ruler-combined' }
                     ],
                     marketing: [
@@ -1022,6 +1023,7 @@
 
                 // 处理卡片点击
                 const handleCardClick = (sub) => {
+                    if (sub.comingSoon) return;
                     // #region agent log
                     fetch('http://127.0.0.1:7242/ingest/c4851b4a-9b3b-4c4a-8d3d-ffa8262f583d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'md-ai/index.html:handleCardClick',message:'Card clicked',data:{title:sub.title,action:sub.action,url:sub.url,baseURI:document.baseURI},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-2',hypothesisId:'A/B'})}).catch(()=>{});
                     // #endregion
