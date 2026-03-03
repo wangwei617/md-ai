@@ -922,24 +922,28 @@
                     'SaaS产品落地页设计',
                     '深色主题数据分析仪表板'
                 ];
-                const categories = [
+const categories = [
                     { id: 'recommend', name: '推荐', icon: 'fa-solid fa-wand-magic-sparkles', color: '#8B5CF6', bg: 'bg-purple-50' },
+                    { id: 'app_gen', name: '生成应用', icon: 'fa-solid fa-code', color: '#10B981', bg: 'bg-emerald-50' },
                     { id: 'prototype', name: '原型设计', icon: 'fa-solid fa-bolt', color: '#EC4899', bg: 'bg-pink-50' },
                     { id: 'planning', name: '产品策划', icon: 'fa-solid fa-clipboard-list', color: '#3B82F6', bg: 'bg-blue-50' },
                     { id: 'ppt', name: 'PPT', icon: 'fa-solid fa-file-powerpoint', color: '#F59E0B', bg: 'bg-amber-50' },
-                    { id: 'ui', name: 'UI设计', icon: 'fa-solid fa-palette', color: '#A855F7', bg: 'bg-violet-50' },
                     { id: 'marketing', name: '营销推广', icon: 'fa-solid fa-bullhorn', color: '#EF4444', bg: 'bg-red-50' },
-                    { id: 'dev_test', name: '研发测试', icon: 'fa-solid fa-code', color: '#10B981', bg: 'bg-emerald-50' },
+                    { id: 'dev_test', name: '研发测试', icon: 'fa-solid fa-bug', color: '#14B8A6', bg: 'bg-teal-50' },
                     { id: 'charts', name: '图表', icon: 'fa-solid fa-diagram-project', color: '#06B6D4', bg: 'bg-cyan-50' }
                 ];
                 const subCategoriesMap = {
                     recommend: [
+                        { title: '一键生成应用', desc: '全自动生成全栈应用，包含前端界面和后端数据库', icon: 'fa-solid fa-rocket', action: 'buildFlow' },
                         { title: 'AI生成原型', desc: '一键生成可交互原型', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: '请描述您想要创建的原型功能和应用场景，例如：设计一个在线教育平台的课程详情页...' },
                         { title: '图片转原型', desc: '上传图片，一键转为原型', icon: 'fa-solid fa-image', action: 'uploadImage', placeholderText: '请上传设计图或截图，我将帮您转换为可编辑的原型...' },
                         { title: '需求文档PRD', desc: '快速生成包含详细逻辑的产品需求文档', icon: 'fa-solid fa-file-word', placeholderText: '请描述产品需求，我将为您生成完整的PRD文档...' },
-                        { title: 'HTML转原型', desc: '上传 HTML 文件，一键转为原型', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png', placeholderText: '请输入网页地址，我将还原为高保真原型...' },
                         { title: '竞品分析', desc: '多维度对比分析，自动输出调研报告', icon: 'fa-solid fa-chart-pie', placeholderText: '请提供竞品名称或行业类别（如在线教育、SaaS工具等），我将进行多维度分析...' },
-                        { title: '产品方案评审', desc: '智能评审原型方案，提供优化建议', icon: 'fa-solid fa-magnifying-glass-plus', placeholderText: '请上传或描述您的产品方案，我将提供专业评审建议...' }
+                    ],
+                    app_gen: [
+                        { title: '生成 Web 应用', desc: '全栈生成，包含前端 React 页面、路由与 Supabase 后端', icon: 'fa-solid fa-desktop', action: 'buildFlow', placeholderText: '请描述您想生成的 Web 应用（例如：一个带有用户管理和数据统计的企业后台系统）...' },
+                        { title: '生成小程序', desc: '自动生成移动端适配的小程序代码结构', icon: 'fa-solid fa-mobile-screen', action: 'buildFlow', placeholderText: '请描述您的小程序需求（例如：一个支持商品展示和在线下单的电商小程序）...' },
+                        { title: '生成官网落地页', desc: '生成高转化率、带动画效果的响应式营销落地页', icon: 'fa-solid fa-globe', action: 'buildFlow', placeholderText: '请提供您的产品信息，我将为您生成响应式官网落地页...' },
                     ],
                     prototype: [
                         { title: 'AI生成原型', desc: '一键生成可交互原型', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: '请描述您想要创建的原型功能和应用场景，例如：设计一个在线教育平台的课程详情页...' },
@@ -1016,6 +1020,19 @@
                     } else {
                         // 原有逻辑
                         isSending.value = true;
+                        
+                        // 检查当前选中的子分类是否有 buildFlow 动作
+                        const currentSub = currentSubCategories.value.find(s => s.title === selectedSubCategory.value);
+                        if (currentSub && currentSub.action === 'buildFlow') {
+                            // 跳转到 localhost:8081 的 Workspace 页面并传参
+                            const targetUrl = `http://localhost:8081/workspace?initPrompt=${encodeURIComponent(inputText.value)}`;
+                            setTimeout(() => {
+                                isSending.value = false;
+                                window.location.href = targetUrl;
+                            }, 500);
+                            return;
+                        }
+
                         setTimeout(() => {
                             isSending.value = false;
                             inputText.value = '';
@@ -1037,6 +1054,12 @@
                         // #endregion
                         // HTML转原型：新tab打开页面
                         window.open(targetUrl, '_blank');
+                    } else if (sub.action === 'buildFlow') {
+                        // 跳转到 BuildFlow 首页，并带上输入内容
+                        selectedSubCategory.value = sub.title;
+                        if (sub.placeholderText) {
+                            inputPlaceholder.value = sub.placeholderText;
+                        }
                     } else if (sub.action === 'uploadImage') {
                         // 图片转原型：显示标签 + 更新placeholder + 打开文件选择器
                         selectedSubCategory.value = sub.title;

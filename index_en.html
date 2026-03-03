@@ -886,24 +886,28 @@
                     'SaaS landing page',
                     'Dark theme data dashboard'
                 ];
-                const categories = [
+const categories = [
                     { id: 'recommend', name: 'Recommend', icon: 'fa-solid fa-wand-magic-sparkles', color: '#8B5CF6', bg: 'bg-purple-50' },
+                    { id: 'app_gen', name: 'App Gen', icon: 'fa-solid fa-code', color: '#10B981', bg: 'bg-emerald-50' },
                     { id: 'prototype', name: 'Prototype', icon: 'fa-solid fa-bolt', color: '#EC4899', bg: 'bg-pink-50' },
                     { id: 'planning', name: 'Planning', icon: 'fa-solid fa-clipboard-list', color: '#3B82F6', bg: 'bg-blue-50' },
                     { id: 'ppt', name: 'PPT', icon: 'fa-solid fa-file-powerpoint', color: '#F59E0B', bg: 'bg-amber-50' },
-                    { id: 'ui', name: 'UI design', icon: 'fa-solid fa-palette', color: '#A855F7', bg: 'bg-violet-50' },
                     { id: 'marketing', name: 'Marketing', icon: 'fa-solid fa-bullhorn', color: '#EF4444', bg: 'bg-red-50' },
-                    { id: 'dev_test', name: 'Dev & Test', icon: 'fa-solid fa-code', color: '#10B981', bg: 'bg-emerald-50' },
+                    { id: 'dev_test', name: 'Dev & Test', icon: 'fa-solid fa-bug', color: '#14B8A6', bg: 'bg-teal-50' },
                     { id: 'charts', name: 'Charts', icon: 'fa-solid fa-diagram-project', color: '#06B6D4', bg: 'bg-cyan-50' }
                 ];
                 const subCategoriesMap = {
                     recommend: [
+                        { title: 'One-Click App', desc: 'Auto-generate full-stack apps with frontend and backend', icon: 'fa-solid fa-rocket', action: 'buildFlow' },
                         { title: 'AI Prototype', desc: 'AI-generated interactive prototype', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: 'Describe the prototype features and use case, e.g., design a course detail page for an online education platform...' },
                         { title: 'Image to prototype', desc: 'Upload an image and convert it into a prototype', icon: 'fa-solid fa-image', action: 'uploadImage', placeholderText: 'Upload design image or screenshot, I will convert it to an editable prototype...' },
                         { title: 'PRD', desc: 'Generate detailed PRD', icon: 'fa-solid fa-file-word', placeholderText: 'Describe product requirements, I will generate a complete PRD document...' },
-                        { title: 'HTML to prototype', desc: 'Upload an HTML and  convert it into a prototype', icon: 'fa-solid fa-code', action: 'openNewTab', url: 'html-to-proto.png', placeholderText: 'Enter webpage address, I will convert it to a high-fidelity prototype...' },
                         { title: 'Competitive analysis', desc: 'Compare and generate report', icon: 'fa-solid fa-chart-pie', placeholderText: 'Provide competitor name or industry category (e.g., online education, SaaS tools), I will conduct multi-dimensional analysis...' },
-                        { title: 'Product review', desc: 'Review prototype & suggest', icon: 'fa-solid fa-magnifying-glass-plus', placeholderText: 'Upload or describe your product solution, I will provide professional review suggestions...' }
+                    ],
+                    app_gen: [
+                        { title: 'Generate Web App', desc: 'Full-stack generation: React pages, routes & Supabase', icon: 'fa-solid fa-desktop', action: 'buildFlow', placeholderText: 'Describe the web app you want to generate (e.g., An enterprise admin panel with user management)...' },
+                        { title: 'Generate Mini Program', desc: 'Auto-generate mobile-adapted mini program code', icon: 'fa-solid fa-mobile-screen', action: 'buildFlow', placeholderText: 'Describe your mini program needs (e.g., An e-commerce app with product display and checkout)...' },
+                        { title: 'Generate Landing Page', desc: 'High-conversion, responsive marketing landing pages', icon: 'fa-solid fa-globe', action: 'buildFlow', placeholderText: 'Provide your product info, and I will generate a responsive landing page...' },
                     ],
                     prototype: [
                         { title: 'AI Prototype', desc: 'AI-generated interactive prototype', icon: 'fa-solid fa-wand-magic-sparkles', placeholderText: 'Describe the prototype features and use case, e.g., design a course detail page for an online education platform...' },
@@ -980,6 +984,19 @@
                     } else {
                         // Original logic
                         isSending.value = true;
+                        
+                        // Check if the current selected sub-category is a buildFlow action
+                        const currentSub = currentSubCategories.value.find(s => s.title === selectedSubCategory.value);
+                        if (currentSub && currentSub.action === 'buildFlow') {
+                            // Redirect to localhost:8081 Workspace with prompt
+                            const targetUrl = `http://localhost:8081/workspace?initPrompt=${encodeURIComponent(inputText.value)}`;
+                            setTimeout(() => {
+                                isSending.value = false;
+                                window.location.href = targetUrl;
+                            }, 500);
+                            return;
+                        }
+
                         setTimeout(() => {
                             isSending.value = false;
                             inputText.value = '';
@@ -1001,6 +1018,12 @@
                         // #endregion
                         // HTML to prototype: open new tab
                         window.open(targetUrl, '_blank');
+                    } else if (sub.action === 'buildFlow') {
+                        // Switch to BuildFlow action
+                        selectedSubCategory.value = sub.title;
+                        if (sub.placeholderText) {
+                            inputPlaceholder.value = sub.placeholderText;
+                        }
                     } else if (sub.action === 'uploadImage') {
                         // Image to prototype: show tag + update placeholder + open file selector
                         selectedSubCategory.value = sub.title;
